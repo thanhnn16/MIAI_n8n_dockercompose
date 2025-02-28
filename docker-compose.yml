@@ -24,7 +24,8 @@ x-n8n: &service-n8n
     - PATH=/google-cloud-sdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     - CLOUDSDK_CONFIG=/home/node/.config/gcloud
     - GENERIC_TIMEZONE=Asia/Ho_Chi_Minh
-    - WEBHOOK_URL=https://n8n.autoreel.io.vn/
+    - WEBHOOK_URL=https://stunning-clam-lightly.ngrok-free.app
+    # - WEBHOOK_URL=https://n8n.autoreel.io.vn/
     - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
     - N8N_PUSH_BACKEND=websocket
     - N8N_RUNNERS_ENABLED=true
@@ -93,7 +94,6 @@ services:
     environment:
       - MODELS_PATH=/build/models
       - REBUILD=TRUE
-      - CMAKE_ARGS="-DGGML_NATIVE=OFF -DGGML_AVX=on -DGGML_AVX2=off -DGGML_AVX512=off -DGGML_FMA=off -DGGML_F16C=off"
     command:
       - dreamshaper
       - llama-3.2-3b-instruct:q8_0
