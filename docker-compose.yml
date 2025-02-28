@@ -26,7 +26,6 @@ x-n8n: &service-n8n
     - GENERIC_TIMEZONE=Asia/Ho_Chi_Minh
     - WEBHOOK_URL=https://n8n.autoreel.io.vn/
     - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
-    - N8N_HOST=103.78.3.93
     - N8N_PUSH_BACKEND=websocket
     - N8N_RUNNERS_ENABLED=true
     - N8N_DEFAULT_BINARY_DATA_MODE=filesystem
