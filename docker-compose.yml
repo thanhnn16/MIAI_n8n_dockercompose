@@ -93,6 +93,7 @@ services:
     environment:
       - MODELS_PATH=/build/models
       - REBUILD=TRUE
+      - CMAKE_ARGS="-DGGML_NATIVE=OFF -DGGML_AVX=on -DGGML_AVX2=off -DGGML_AVX512=off -DGGML_FMA=off -DGGML_F16C=off"
     command:
       - dreamshaper
       - llama-3.2-3b-instruct:q8_0
