@@ -1,10 +1,13 @@
-# MIAI_n8n_dockercompose
-Demo of using docker compose to start n8n on VPS with LLM and SD
+# Fork from MIAI_n8n_dockercompose
 
-Video link:  [https://youtu.be/_52-kz08LvU](https://youtu.be/OfLYgNmsKoQ)
+```
+curl -s -o install.sh https://raw.githubusercontent.com/thanhnn16/MIAI_n8n_dockercompose/main/install.sh
+```
 
-#MìAI <br>
-Fanpage: http://facebook.com/miaiblog<br>
-Group trao đổi, chia sẻ: https://www.facebook.com/groups/miaigroup<br>
-Website: http://miai.vn<br>
-Youtube: http://bit.ly/miaiyoutube<br> 
+```
+chmod +x install.sh
+```
+
+```
+sudo ./install.sh
+```

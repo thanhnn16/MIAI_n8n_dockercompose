@@ -11,6 +11,35 @@ wait_for_apt() {
   echo "Khóa apt đã được giải phóng, tiếp tục cài đặt..."
 }
 
+# Hàm kiểm tra và cài đặt CUDA
+check_cuda_installation() {
+  echo "Kiểm tra cài đặt CUDA..."
+  
+  if command -v nvcc &> /dev/null; then
+    nvcc_version=$(nvcc --version | grep "release" | awk '{print $6}' | cut -d',' -f1)
+    echo "✅ CUDA đã được cài đặt, phiên bản: $nvcc_version"
+  else
+    echo "⚠️ CUDA chưa được cài đặt. Đang cài đặt CUDA..."
+    
+    # Cài đặt CUDA
+    wait_for_apt && sudo apt-get update -y
+    wait_for_apt && sudo apt-get install -y cuda-toolkit-12-0
+    
+    # Thiết lập biến môi trường
+    echo 'export PATH=/usr/local/cuda-12.0/bin${PATH:+:${PATH}}' >> ~/.bashrc
+    echo 'export LD_LIBRARY_PATH=/usr/local/cuda-12.0/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}' >> ~/.bashrc
+    source ~/.bashrc
+    
+    # Kiểm tra lại cài đặt
+    if command -v nvcc &> /dev/null; then
+      nvcc_version=$(nvcc --version | grep "release" | awk '{print $6}' | cut -d',' -f1)
+      echo "✅ CUDA đã được cài đặt thành công, phiên bản: $nvcc_version"
+    else
+      echo "⚠️ Cài đặt CUDA không thành công. Vui lòng cài đặt thủ công."
+    fi
+  fi
+}
+
 # Hàm kiểm tra NVIDIA driver
 check_nvidia_driver() {
   echo "Kiểm tra NVIDIA driver..."
@@ -22,7 +51,14 @@ check_nvidia_driver() {
       # Cập nhật package lists
       wait_for_apt && sudo apt-get update -y
       
-      # Kiểm tra phiên bản driver hiện tại
+      # Gỡ bỏ driver cũ nếu có
+      wait_for_apt && sudo apt-get remove --purge -y nvidia-*
+      
+      # Cài đặt các gói cần thiết
+      wait_for_apt && sudo apt-get install -y build-essential dkms
+      
+      # Kiểm tra phiên bản driver được khuyến nghị
+      wait_for_apt && sudo apt-get install -y ubuntu-drivers-common
       driver_version=$(ubuntu-drivers devices | grep "recommended" | awk '{print $3}' | cut -d'-' -f2)
       if [ -z "$driver_version" ]; then
         driver_version="550" # Mặc định nếu không tìm thấy
@@ -41,8 +77,18 @@ check_nvidia_driver() {
       nvidia-smi
       
       echo "⚠️ Nếu vẫn gặp vấn đề với NVIDIA driver, vui lòng khởi động lại hệ thống và chạy lại script."
+      echo "Khởi động lại hệ thống để áp dụng thay đổi? (y/n)"
+      read -r restart_choice
+      if [[ "$restart_choice" == "y" ]]; then
+        echo "Hệ thống sẽ khởi động lại sau 5 giây..."
+        sleep 5
+        sudo reboot
+      fi
     else
       echo "✅ NVIDIA driver hoạt động bình thường."
+      # Hiển thị thông tin GPU
+      echo "Thông tin GPU:"
+      nvidia-smi
     fi
   else
     echo "⚠️ Không tìm thấy NVIDIA driver. Đang cài đặt..."
@@ -58,8 +104,82 @@ check_nvidia_driver() {
     echo "Đang cài đặt NVIDIA driver phiên bản $driver_version..."
     wait_for_apt && sudo apt-get install -y nvidia-driver-$driver_version
     
-    echo "⚠️ Vui lòng khởi động lại hệ thống sau khi cài đặt hoàn tất để NVIDIA driver có hiệu lực."
+    echo "⚠️ Cần khởi động lại hệ thống để NVIDIA driver có hiệu lực."
+    echo "Khởi động lại hệ thống ngay bây giờ? (y/n)"
+    read -r restart_choice
+    if [[ "$restart_choice" == "y" ]]; then
+      echo "Hệ thống sẽ khởi động lại sau 5 giây..."
+      sleep 5
+      sudo reboot
+    else
+      echo "⚠️ Vui lòng khởi động lại hệ thống sau khi cài đặt hoàn tất để NVIDIA driver có hiệu lực."
+    fi
   fi
+}
+
+# Hàm kiểm tra GPU cho Docker
+verify_gpu_for_docker() {
+  echo "Kiểm tra GPU cho Docker..."
+  
+  # Kiểm tra xem Docker có thể truy cập GPU không
+  if sudo docker run --rm --gpus all nvidia/cuda:12.0.0-base-ubuntu22.04 nvidia-smi &> /dev/null; then
+    echo "✅ Docker có thể truy cập GPU thành công."
+    # Hiển thị thông tin GPU từ container
+    sudo docker run --rm --gpus all nvidia/cuda:12.0.0-base-ubuntu22.04 nvidia-smi
+  else
+    echo "⚠️ Docker không thể truy cập GPU. Đang cấu hình lại NVIDIA Container Toolkit..."
+    
+    # Cài đặt lại NVIDIA Container Toolkit
+    curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+    curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list \
+    | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' \
+    | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+    
+    wait_for_apt && sudo apt-get update -y
+    wait_for_apt && sudo apt-get install -y nvidia-container-toolkit
+    
+    # Cấu hình Docker để sử dụng NVIDIA runtime
+    sudo nvidia-ctk runtime configure --runtime=docker
+    sudo systemctl restart docker
+    
+    # Kiểm tra lại
+    if sudo docker run --rm --gpus all nvidia/cuda:12.0.0-base-ubuntu22.04 nvidia-smi &> /dev/null; then
+      echo "✅ Docker đã có thể truy cập GPU thành công."
+      sudo docker run --rm --gpus all nvidia/cuda:12.0.0-base-ubuntu22.04 nvidia-smi
+    else
+      echo "⚠️ Docker vẫn không thể truy cập GPU. Vui lòng kiểm tra lại cài đặt thủ công."
+    fi
+  fi
+}
+
+# Hàm dọn dẹp thư mục và file tạm
+cleanup_temp_files() {
+  echo "Đang dọn dẹp thư mục và file tạm..."
+  
+  # Xóa các file tạm và cache apt
+  sudo apt-get clean -y
+  sudo apt-get autoremove -y
+  
+  # Xóa các file tạm trong /tmp
+  sudo rm -rf /tmp/*
+  
+  # Xóa cache Docker nếu cần
+  echo "Bạn có muốn xóa cache Docker không? (y/n)"
+  read -r clean_docker
+  if [[ "$clean_docker" == "y" ]]; then
+    echo "Đang xóa cache Docker..."
+    sudo docker system prune -af --volumes
+  fi
+  
+  # Xóa các file log cũ
+  sudo find /var/log -type f -name "*.gz" -delete
+  sudo find /var/log -type f -name "*.1" -delete
+  
+  # Xóa các file .bak và .tmp
+  sudo find ~ -type f -name "*.bak" -delete
+  sudo find ~ -type f -name "*.tmp" -delete
+  
+  echo "Dọn dẹp hoàn tất!"
 }
 
 echo "--------- 🟢 Bắt đầu clone repository -----------"
@@ -87,6 +207,10 @@ echo "--------- 🟢 Kiểm tra và cài đặt NVIDIA driver -----------"
 check_nvidia_driver
 echo "--------- 🔴 Hoàn thành kiểm tra NVIDIA driver -----------"
 
+echo "--------- 🟢 Kiểm tra và cài đặt CUDA -----------"
+check_cuda_installation
+echo "--------- 🔴 Hoàn thành kiểm tra CUDA -----------"
+
 echo "--------- 🟢 Bắt đầu cài đặt NVIDIA support cho Docker -----------"
 curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey \
 | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
@@ -98,6 +222,10 @@ wait_for_apt && sudo apt-get install -y nvidia-container-toolkit
 sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
 echo "--------- 🔴 Hoàn thành cài đặt NVIDIA support cho Docker -----------"
+
+echo "--------- 🟢 Kiểm tra GPU cho Docker -----------"
+verify_gpu_for_docker
+echo "--------- 🔴 Hoàn thành kiểm tra GPU cho Docker -----------"
 
 echo "--------- 🟢 Bắt đầu cài đặt Nginx -----------"
 wait_for_apt && sudo apt update -y
@@ -171,14 +299,19 @@ sudo docker-compose up -d
 echo "Các container đã được khởi động thành công!"
 echo "--------- 🔴 n8n đã được khởi động -----------"
 
-echo "--------- 🟢 Dọn dẹp các file tạm -----------"
-# Xóa các file tạm và cache không cần thiết
-cd ~
-sudo apt-get clean -y
-sudo apt-get autoremove -y
+echo "--------- 🟢 Dọn dẹp các file tạm và thư mục dư thừa -----------"
+cleanup_temp_files
 echo "--------- 🔴 Hoàn thành dọn dẹp -----------"
 
 echo "Cài đặt hoàn tất! Truy cập n8n tại https://n8n.autoreel.io.vn"
+echo ""
+echo "Thông tin hệ thống:"
+echo "- Docker version: $(docker --version)"
+echo "- Docker Compose version: $(docker-compose --version)"
+echo "- NVIDIA Driver version: $(nvidia-smi | grep "Driver Version" | awk '{print $3}')"
+if command -v nvcc &> /dev/null; then
+  echo "- CUDA version: $(nvcc --version | grep "release" | awk '{print $6}' | cut -d',' -f1)"
+fi
 echo ""
 echo "Nếu bạn gặp vấn đề với NVIDIA driver, vui lòng thử các bước sau:"
 echo "1. Khởi động lại hệ thống: sudo reboot"

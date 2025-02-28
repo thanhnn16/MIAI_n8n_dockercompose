@@ -92,13 +92,9 @@ services:
       - localai_storage:/build/models
     environment:
       - MODELS_PATH=/build/models
+      - REBUILD=true
     command:
       - dreamshaper
       - llama-3.2-3b-instruct:q8_0
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ["0"]
-              capabilities: [gpu]
+      - whisper-large-q5_0
+    gpus: all
