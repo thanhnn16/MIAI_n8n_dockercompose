@@ -77,8 +77,8 @@ check_nvidia_driver() {
       nvidia-smi
       
       echo "⚠️ Nếu vẫn gặp vấn đề với NVIDIA driver, vui lòng khởi động lại hệ thống và chạy lại script."
-      echo "Khởi động lại hệ thống để áp dụng thay đổi? (y/n)"
-      read -r restart_choice
+      echo "Tự động khởi động lại hệ thống để áp dụng thay đổi."
+      restart_choice="y"
       if [[ "$restart_choice" == "y" ]]; then
         echo "Hệ thống sẽ khởi động lại sau 5 giây..."
         sleep 5
@@ -105,8 +105,8 @@ check_nvidia_driver() {
     wait_for_apt && sudo apt-get install -y nvidia-driver-$driver_version
     
     echo "⚠️ Cần khởi động lại hệ thống để NVIDIA driver có hiệu lực."
-    echo "Khởi động lại hệ thống ngay bây giờ? (y/n)"
-    read -r restart_choice
+    echo "Tự động khởi động lại hệ thống ngay bây giờ."
+    restart_choice="y"
     if [[ "$restart_choice" == "y" ]]; then
       echo "Hệ thống sẽ khởi động lại sau 5 giây..."
       sleep 5
@@ -164,8 +164,8 @@ cleanup_temp_files() {
   sudo rm -rf /tmp/*
   
   # Xóa cache Docker nếu cần
-  echo "Bạn có muốn xóa cache Docker không? (y/n)"
-  read -r clean_docker
+  echo "Tự động xóa cache Docker."
+  clean_docker="y"
   if [[ "$clean_docker" == "y" ]]; then
     echo "Đang xóa cache Docker..."
     sudo docker system prune -af --volumes
