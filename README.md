@@ -5,3 +5,7 @@ curl -s -o install.sh https://raw.githubusercontent.com/thanhnn16/MIAI_n8n_docke
 chmod +x install.sh
 sudo ./install.sh
 ```
+
+```
+docker compose --profile gpu-nvidia up
+```
