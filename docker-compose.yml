@@ -82,19 +82,26 @@ services:
       - qdrant_storage:/qdrant/storage
 
   localai:
-    image: localai/localai:latest-gpu-nvidia-cuda-12
-    container_name: localai
+    image: localai/localai:v2.26.0-cublas-cuda12-ffmpeg
     hostname: localai
+    container_name: localai
     networks: ["autoreel"]
-    restart: always
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/readyz"]
+      interval: 1m
+      timeout: 20m
+      retries: 5
     ports:
-      - "8080:8080"
-    volumes:
-      - localai_storage:/build/models
+      - 8080:8080
     environment:
-      - MODELS_PATH=/build/models
+      - DEBUG=true
+      - MODEL_PATH=/build/models
+    volumes:
+      - ./models:/build/models:cached
+      - localai_storage:/build/models
     command:
-      - dreamshaper
+      - flux.1-dev
       - llama-3.2-3b-instruct:q8_0
       - whisper-large-q5_0
     deploy:
@@ -102,5 +109,5 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: ["0"]
+              count: 1
               capabilities: [gpu]

@@ -7,5 +7,5 @@ sudo ./install.sh
 ```
 
 ```
-docker compose --profile gpu-nvidia up
+docker compose --profile gpu-nvidia --profile localai --profile n8n up -d
 ```
