@@ -101,9 +101,8 @@ services:
       - ./models:/build/models:cached
       - localai_storage:/build/models
     command:
-      - flux.1-dev
       - llama-3.2-3b-instruct:q8_0
-      - whisper-large-q5_0
+      - whisper-1
     deploy:
       resources:
         reservations:
