@@ -3,7 +3,6 @@ volumes:
   postgres_storage:
   qdrant_storage:
   localai_storage:
-  comfyui_storage:
 
 networks:
   autoreel:
@@ -122,7 +121,7 @@ services:
     ports:
       - 8188:8188
     volumes:
-      - comfyui_storage:/root
+      - ./storage:/root
     environment:
       - CLI_ARGS=""
     deploy:

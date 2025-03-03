@@ -288,6 +288,11 @@ echo "--------- 🔴 Hoàn thành thiết lập SSL với Certbot -----------"
 
 echo "--------- 🟢 Bắt đầu build Docker Compose -----------"
 cd ~/n8n
+
+echo "Tạo thư mục storage cho ComfyUI..."
+mkdir -p storage
+chmod 777 storage
+
 echo "Đang build các container..."
 sudo docker-compose build
 echo "Build hoàn tất!"
