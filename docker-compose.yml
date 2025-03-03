@@ -3,6 +3,7 @@ volumes:
   postgres_storage:
   qdrant_storage:
   localai_storage:
+  comfyui_storage:
 
 networks:
   autoreel:
@@ -104,6 +105,26 @@ services:
       - flux.1-dev
       - llama-3.2-3b-instruct:q8_0
       - whisper-large-q5_0
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  comfyui:
+    image: yanwk/comfyui-boot:cu124-slim
+    hostname: comfyui
+    container_name: comfyui
+    networks: ["autoreel"]
+    restart: unless-stopped
+    ports:
+      - 8188:8188
+    volumes:
+      - comfyui_storage:/root
+    environment:
+      - CLI_ARGS=""
     deploy:
       resources:
         reservations:
