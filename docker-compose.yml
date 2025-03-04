@@ -137,7 +137,7 @@ services:
     ports:
       - 8188:8188
     volumes:
-      - ./storage:/storage
+      - ./storage:/root
     deploy:
       resources:
         reservations:
