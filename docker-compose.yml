@@ -121,8 +121,6 @@ services:
       - 8188:8188
     volumes:
       - ./storage:/root
-    environment:
-      - CLI_ARGS=""
     deploy:
       resources:
         reservations:
