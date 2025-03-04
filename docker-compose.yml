@@ -66,6 +66,7 @@ services:
       - n8n_storage:/home/node/.n8n
       - ./n8n/backup:/backup
       - ./shared:/data/shared
+      - ./storage:/storage
     depends_on:
       postgres:
         condition: service_healthy
@@ -111,6 +112,22 @@ services:
               count: 1
               capabilities: [gpu]
 
+  ffmpeg:
+    image: jrottenberg/ffmpeg:7.1-nvidia2204-edge
+    hostname: ffmpeg
+    container_name: ffmpeg
+    networks: ["autoreel"]
+    restart: unless-stopped
+    volumes:
+      - ./storage:/storage
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
   comfyui:
     image: yanwk/comfyui-boot:cu124-slim
     hostname: comfyui
@@ -120,7 +137,7 @@ services:
     ports:
       - 8188:8188
     volumes:
-      - ./storage:/root
+      - ./storage:/storage
     deploy:
       resources:
         reservations:
